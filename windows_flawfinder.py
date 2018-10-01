@@ -3,58 +3,6 @@ from lxml.html import parse     # html양식으로 파싱
 from io import StringIO         # 문자열 입출력 모듈
 from xml.etree.ElementTree import Element, SubElement, dump, ElementTree
 
-def sourceRead(filePath):
-    source = ''
-    # web문서를 source(text문서)로 가져오기
-    with open(filePath, mode="r") as f:
-        while True:
-            line = f.readline()
-            if line is '':
-                break
-            else:
-                source = source + line
-    return source
-
-def findTag(tagName, source):
-    tag = []
-    tempTag = []
-    tempNum = 0
-    # html 문서로 파싱(변환)
-    source = StringIO(source)  # 문자열로 읽음
-    parsed = parse(source)      # source -> html형식으로 파싱
-
-    # root node 찾기
-    doc = parsed.getroot()
-
-    # doc.findall(".//태그")    # 찾고자 하는 태그명
-    while True:
-        if tempNum is len(tagName):
-            break
-        tempTag = doc.findall('.//'+tagName[tempNum])
-        tag.append(tempTag)
-        tempNum = tempNum + 1
-    return tag
-
-def flawfinderParsing(tag):
-    tempNum1 = 0
-    tempNum2 = 0
-    tempText = []
-    tagText = []
-    while True:
-        if tempNum1 is len(tag[0]):
-            break
-        tempText = (tag[0][tempNum1].text).split('./')
-        tempText = tempText[1].split(':')
-        del tempText[2]
-        tagText.append(tempText)
-        tempNum1 = tempNum1 + 1
-    while True:
-        if tempNum2 is len(tag[1]):
-            break
-        tagText[tempNum2].append(tag[1][tempNum2].text)
-        tempNum2 = tempNum2 + 1
-    return tagText
-
 def indent(elem, level=0):
     i = "\n" + level*"  "
     if len(elem):
@@ -70,19 +18,57 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
+def sourceRead(filePath):
+    source = ''
+    # web문서를 source(text문서)로 가져오기
+    with open(filePath, mode="r") as f:
+        while True:
+            line = f.readline()
+            if line is '':
+                break
+            else:
+                source = source + line
+    return source
+
+def findTag(tagName, source):
+    tag = []
+    tempTag = []
+    # html 문서로 파싱(변환)
+    source = StringIO(source)  # 문자열로 읽음
+    parsed = parse(source)  # source -> html형식으로 파싱
+
+    # root node 찾기
+    doc = parsed.getroot()
+
+    # doc.findall(".//태그")    # 찾고자 하는 태그명
+    for i in range(0, len(tagName), 1):
+        tempTag = doc.findall('.//' + tagName[i])
+        tag.append(tempTag)
+    return tag
+
+def flawfinderParsing(tag):
+    tempText = []
+    tagText = []
+    for i in range(0, len(tag[0]), 1):
+        tempText = (tag[0][i].text).split('./')
+        tempText = tempText[1].split(':')
+        del tempText[2]
+        tagText.append(tempText)
+    for j in range(0, len(tag[1]), 1):
+        tagText[j].append(tag[1][j].text)
+    for k in range(0, len(tagText), 1):
+        tagText[k].append('flawfinder_result')
+    return tagText
+
 def flawfinderResult_to_tag(tagText, nowDate):
-    tagNum = 0
     flawfinder = Element("flawfinder")
     flawfinder.attrib["result"] = nowDate
-    while True:
+    for tagNum in range(0, len(tagText), 1):
         error = Element("error")
         error.attrib["File"] = tagText[tagNum][0]
         flawfinder.append(error)
         SubElement(error, "Location").text = "line " + tagText[tagNum][1]
         SubElement(error, "Description").text = tagText[tagNum][2]
-        tagNum = tagNum + 1
-        if tagNum is len(tagText):
-            break
     indent(flawfinder)
     # dump(flawfinder)
     return flawfinder

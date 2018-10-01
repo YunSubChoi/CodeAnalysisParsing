@@ -5,77 +5,6 @@ from lxml.html import parse     # html양식으로 파싱
 from io import StringIO         # 문자열 입출력 모듈
 from xml.etree.ElementTree import Element, SubElement, dump, ElementTree
 
-def sourceRead(filePath):
-    source = ''
-    # web문서를 source(text문서)로 가져오기
-    with open(filePath, mode="r") as f:
-        while True:
-            line = f.readline()
-            if line is '':
-                break
-            else:
-                source = source + line
-    return source
-
-def findTag(tagName, source):
-    tag = []
-    tempTag = []
-    tempNum = 0
-    # html 문서로 파싱(변환)
-    source = StringIO(source)  # 문자열로 읽음
-    parsed = parse(source)  # source -> html형식으로 파싱
-
-    # root node 찾기
-    doc = parsed.getroot()
-
-    # doc.findall(".//태그")    # 찾고자 하는 태그명
-    while True:
-        if tempNum is len(tagName):
-            break
-        tempTag = doc.findall('.//'+tagName[tempNum])
-        tag.append(tempTag)
-        tempNum = tempNum + 1
-    return tag
-
-def clangParsing(tag):
-    tempNum1 = 0
-    while True:     # repeat as many as files
-        tempNum2 = 0
-        if tempNum1 is len(tag):
-            break
-        while True:
-            if len(tag[tempNum1][0]) is 6:
-                break
-            if tempNum2 < 6:
-                tempNum2 = tempNum2 + 1
-            else:
-                del(tag[tempNum1][0][tempNum2])
-        tempNum1 = tempNum1 + 1
-
-    tempNum1 = 0
-    tempText3 = []
-    tagText = []
-    while True:     # repeat as many as files
-        tempNum2 = 0
-        tempText1 = []
-        tempText2 = []
-        if tempNum1 is len(tag):
-            break
-        tempText1 = tag[tempNum1][0][1].text    # tempText1 = file name
-        tempText2.append(tempText1)
-
-        tempText1 = (tag[tempNum1][1][0].text).split(',')
-        tempText1 = tempText1[0].replace('line ', '')    # tempText1 = error location
-        tempText2.append(tempText1)
-
-        tempText1 = tag[tempNum1][0][5].text    # tempText1 = error content
-        tempText2.append(tempText1)
-
-        tagText.append(tempText2)
-
-        tempNum1 = tempNum1 + 1
-    return tagText
-
 def indent(elem, level=0):
     i = "\n" + level*"  "
     if len(elem):
@@ -91,23 +20,81 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
+def sourceRead(filePath):
+    source = ''
+    # web문서를 source(text문서)로 가져오기
+    with open(filePath, mode="r") as f:
+        while True:
+            line = f.readline()
+            if line is '':
+                break
+            else:
+                source = source + line
+    return source
+
+def findTag(tagName, source):
+    tag = []
+    tempTag = []
+    # html 문서로 파싱(변환)
+    source = StringIO(source)  # 문자열로 읽음
+    parsed = parse(source)  # source -> html형식으로 파싱
+
+    # root node 찾기
+    doc = parsed.getroot()
+
+    # doc.findall(".//태그")    # 찾고자 하는 태그명
+    for i in range(0, len(tagName), 1):
+        tempTag = doc.findall('.//' + tagName[i])
+        tag.append(tempTag)
+    return tag
+
+def clangParsing(tag):
+    for i in range(0, len(tag), 1):     # repeat as many as files
+        tempNum = 0
+        while True:
+            if len(tag[i][0]) is 6:
+                break
+            if tempNum < 6:
+                tempNum = tempNum + 1
+            else:
+                del(tag[i][0][tempNum])
+
+    tempText3 = []
+    tagText = []
+    for j in range(0, len(tag), 1):     # repeat as many as files
+        tempText1 = []
+        tempText2 = []
+
+        tempText1 = tag[j][0][1].text    # tempText1 = file name
+        tempText2.append(tempText1)
+
+        tempText1 = (tag[j][1][0].text).split(',')
+        tempText1 = tempText1[0].replace('line ', '')    # tempText1 = error location
+        tempText2.append(tempText1)
+
+        tempText1 = tag[j][0][5].text    # tempText1 = error content
+        tempText2.append(tempText1)
+
+        tagText.append(tempText2)
+
+    for k in range(0, len(tagText), 1):
+        tagText[k].append('clang_result')
+    return tagText
+
+
+
 def clang_to_tag(tagText, nowDate):
-    tagNum = 0
     clang = Element("clang")
     clang.attrib["result"] = nowDate
-    while True:
-        if tagNum is len(tagText):
-            break
+    for tagNum in range(0, len(tagText), 1):
         error = Element("error")
         error.attrib["File"] = tagText[tagNum][0]
         clang.append(error)
         SubElement(error, "Location").text = "line " + tagText[tagNum][1]
         SubElement(error, "Description").text = tagText[tagNum][2]
-        tagNum = tagNum + 1
     indent(clang)
     # dump(clang)
     return clang
-
 
 
 # nowDatatime에 datetime정보 저장
@@ -133,21 +120,13 @@ tagText = []
 source = []
 tempSource = ''
 
-tempNum = 0
-while True:
-    if tempNum is len(fileList):
-        break
-    tempSource = sourceRead(fileList[tempNum])
+for i in range(0, len(fileList), 1):
+    tempSource = sourceRead(fileList[i])
     source.append(tempSource)
-    tempNum = tempNum + 1
 
-tempNum = 0
-while True:
-    if tempNum is len(source):
-        break
-    tempTag = findTag(tagName, source[tempNum])
+for j in range(0, len(source), 1):
+    tempTag = findTag(tagName, source[j])
     tag.append(tempTag)
-    tempNum = tempNum + 1
 
 tagText = clangParsing(tag)
 

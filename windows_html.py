@@ -36,7 +36,6 @@ def sourceRead(filePath):
 def findTag(tagName, source):
     tag = []
     tempTag = []
-    tempNum = 0
     # html 문서로 파싱(변환)
     source = StringIO(source)  # 문자열로 읽음
     parsed = parse(source)  # source -> html형식으로 파싱
@@ -45,98 +44,68 @@ def findTag(tagName, source):
     doc = parsed.getroot()
 
     # doc.findall(".//태그")    # 찾고자 하는 태그명
-    while True:
-        if tempNum is len(tagName):
-            break
-        tempTag = doc.findall('.//'+tagName[tempNum])
+    for i in range(0, len(tagName), 1):
+        tempTag = doc.findall('.//'+tagName[i])
         tag.append(tempTag)
-        tempNum = tempNum + 1
     return tag
 
 def clangParsing(tag):
-    tempNum1 = 0
-    while True:     # repeat as many as files
-        tempNum2 = 0
-        if tempNum1 is len(tag):
-            break
+    for i in range(0, len(tag), 1):     # repeat as many as files
+        tempNum = 0
         while True:
-            if len(tag[tempNum1][0]) is 6:
+            if len(tag[i][0]) is 6:
                 break
-            if tempNum2 < 6:
-                tempNum2 = tempNum2 + 1
+            if tempNum < 6:
+                tempNum = tempNum + 1
             else:
-                del(tag[tempNum1][0][tempNum2])
-        tempNum1 = tempNum1 + 1
+                del(tag[i][0][tempNum])
 
-    tempNum1 = 0
     tempText3 = []
     tagText = []
-    while True:     # repeat as many as files
-        tempNum2 = 0
+    for j in range(0, len(tag), 1):     # repeat as many as files
         tempText1 = []
         tempText2 = []
-        if tempNum1 is len(tag):
-            break
-        tempText1 = tag[tempNum1][0][1].text    # tempText1 = file name
+
+        tempText1 = tag[j][0][1].text    # tempText1 = file name
         tempText2.append(tempText1)
 
-        tempText1 = (tag[tempNum1][1][0].text).split(',')
+        tempText1 = (tag[j][1][0].text).split(',')
         tempText1 = tempText1[0].replace('line ', '')    # tempText1 = error location
         tempText2.append(tempText1)
 
-        tempText1 = tag[tempNum1][0][5].text    # tempText1 = error content
+        tempText1 = tag[j][0][5].text    # tempText1 = error content
         tempText2.append(tempText1)
 
         tagText.append(tempText2)
 
-        tempNum1 = tempNum1 + 1
-    tempNum3 = 0
-    while True:
-        if tempNum3 is len(tagText):
-            break
-        tagText[tempNum3].append('clang_result')
-        tempNum3 = tempNum3 + 1
+    for k in range(0, len(tagText), 1):
+        tagText[k].append('clang_result')
     return tagText
 
 def flawfinderParsing(tag):
-    tempNum1 = 0
-    tempNum2 = 0
-    tempNum3 = 0
     tempText = []
     tagText = []
-    while True:
-        if tempNum1 is len(tag[0]):
-            break
-        tempText = (tag[0][tempNum1].text).split('./')
+    for i in range(0, len(tag[0]), 1):
+        tempText = (tag[0][i].text).split('./')
         tempText = tempText[1].split(':')
         del tempText[2]
         tagText.append(tempText)
-        tempNum1 = tempNum1 + 1
-    while True:
-        if tempNum2 is len(tag[1]):
-            break
-        tagText[tempNum2].append(tag[1][tempNum2].text)
-        tempNum2 = tempNum2 + 1
-    while True:
-        if tempNum3 is len(tagText):
-            break
-        tagText[tempNum3].append('flawfinder_result')
-        tempNum3 = tempNum3 + 1
+    for j in range(0, len(tag[1]), 1):
+        tagText[j].append(tag[1][j].text)
+    for k in range(0, len(tagText), 1):
+        tagText[k].append('flawfinder_result')
     return tagText
 
+
 def clang_to_tag(tagText, nowDate):
-    tagNum = 0
     clang = Element("clang")
     clang.attrib["result"] = nowDate
-    while True:
+    for tagNum in range(0, len(tagText), 1):
         error = Element("error")
         error.attrib["File"] = tagText[tagNum][0]
         clang.append(error)
         SubElement(error, "Location").text = "line " + tagText[tagNum][1]
         SubElement(error, "Description").text = tagText[tagNum][2]
-        tagNum = tagNum + 1
-        if tagNum is len(tagText):
-            break
     indent(clang)
     # dump(clang)
     return clang
@@ -159,21 +128,17 @@ def flawfinderResult_to_tag(tagText, nowDate):
     return flawfinder
 
 def makeTag(tagText, nowDate):
-    tagNum = 0
     code_analysis = Element("code_analysis")
     code_analysis.attrib["result"] = nowDate
-    while True:
-        if tagNum is len(tagText):
-            break
+    for tagNum in range(0, len(tagText), 1):
         error = Element("error")
         error.attrib["File"] = tagText[tagNum][0]
         code_analysis.append(error)
         SubElement(error, "Location").text = "line " + tagText[tagNum][1]
         SubElement(error, tagText[tagNum][3]).text = tagText[tagNum][2]
         if len(tagText[tagNum]) > 4:
-            for i in range(4, len(tagText[tagNum])-4, 1):
+            for i in range(4, len(tagText[tagNum]) - 4, 1):
                 SubElement(error, tagText[tagNum][3]).text = tagText[tagNum][i]
-        tagNum = tagNum + 1
     indent(code_analysis)
     dump(code_analysis)
     return code_analysis
@@ -202,28 +167,20 @@ def sort_filename(tagText):
 
 def sort_errors(tagText1, tagText2):
     sort_tagText = copy.deepcopy(tagText2)
-    tempNum1 = 0
     tof = True
-    while True:
-        if tempNum1 is len(tagText1):
-            break
-        tempNum2 = 0
-        while True:
-            if tempNum2 is len(tagText2):
-                break
-            if tagText1[tempNum1][0] == tagText2[tempNum2][0]:
-                if tagText1[tempNum1][1] == tagText2[tempNum2][0]:
-                    sort_tagText[tempNum1].append(tagText1[tempNum1][2])
-                    sort_tagText[tempNum1][3] = tagText2[tempNum1][3] + tagText1[tempNum1][3]
+    for i in range(0, len(tagText1), 1):
+        for j in range(0, len(tagText2), 1):
+            if tagText1[i][0] == tagText2[j][0]:
+                if tagText1[i][1] == tagText2[j][0]:
+                    sort_tagText[i].append(tagText1[i][2])
+                    sort_tagText[i][3] = tagText2[i][3] + tagText1[i][3]
                     tof = True
                 else:
                     tof = False
             else:
                 tof = False
-            tempNum2 = tempNum2 + 1
         if tof is False:
-            sort_tagText.append(tagText1[tempNum1])
-        tempNum1 = tempNum1 + 1
+            sort_tagText.append(tagText1[i])
     sort_tagText = bubbleSort(sort_tagText)
     sort_tagText = sort_filename(sort_tagText)
     return sort_tagText
@@ -262,21 +219,13 @@ sort_tagText = []
 tempSource = ''
 flawfinder_source = ''
 
-tempNum = 0
-while True:
-    if tempNum is len(clang_fileList):
-        break
-    tempSource = sourceRead(clang_fileList[tempNum])
+for i in range(0, len(clang_fileList), 1):
+    tempSource = sourceRead(clang_fileList[i])
     clang_source.append(tempSource)
-    tempNum = tempNum + 1
 
-tempNum = 0
-while True:
-    if tempNum is len(clang_source):
-        break
-    tempTag = findTag(clang_tagName, clang_source[tempNum])
+for j in range(0, len(clang_source), 1):
+    tempTag = findTag(clang_tagName, clang_source[j])
     clang_tag.append(tempTag)
-    tempNum = tempNum + 1
 
 clang_tagText = clangParsing(clang_tag)
 
