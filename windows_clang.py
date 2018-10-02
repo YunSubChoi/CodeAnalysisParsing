@@ -81,18 +81,18 @@ def clangParsing(tag):
         tagText[k].append('clang_result')
     return tagText
 
-def clang_to_tag(tagText, nowDate):
-    clang = Element("clang")
-    clang.attrib["result"] = nowDate
+def to_tag(tagText, nowDate, fileName):
+    fileNameTag = Element(fileName)
+    fileNameTag.attrib["result"] = nowDate
     for tagNum in range(0, len(tagText), 1):
         error = Element("error")
         error.attrib["File"] = tagText[tagNum][0]
-        clang.append(error)
+        fileNameTag.append(error)
         SubElement(error, "Location").text = "line " + tagText[tagNum][1]
         SubElement(error, "Description").text = tagText[tagNum][2]
-    indent(clang)
-    # dump(clang)
-    return clang
+    indent(fileNameTag)
+    dump(fileNameTag)
+    return fileNameTag
 
 
 
@@ -129,5 +129,5 @@ for j in range(0, len(source), 1):
 tagText = clangParsing(tag)
 
 clang = Element
-clang = clang_to_tag(tagText, nowDate)
+clang = to_tag(tagText, nowDate, 'clang')
 ElementTree(clang).write('D:/test/result/clang-' + nowDate + '.xml')

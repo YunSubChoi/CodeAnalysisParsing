@@ -60,18 +60,18 @@ def flawfinderParsing(tag):
         tagText[k].append('flawfinder_result')
     return tagText
 
-def flawfinderResult_to_tag(tagText, nowDate):
-    flawfinder = Element("flawfinder")
-    flawfinder.attrib["result"] = nowDate
+def to_tag(tagText, nowDate, fileName):
+    fileNameTag = Element(fileName)
+    fileNameTag.attrib["result"] = nowDate
     for tagNum in range(0, len(tagText), 1):
         error = Element("error")
         error.attrib["File"] = tagText[tagNum][0]
-        flawfinder.append(error)
+        fileNameTag.append(error)
         SubElement(error, "Location").text = "line " + tagText[tagNum][1]
         SubElement(error, "Description").text = tagText[tagNum][2]
-    indent(flawfinder)
-    # dump(flawfinder)
-    return flawfinder
+    indent(fileNameTag)
+    dump(fileNameTag)
+    return fileNameTag
 
 
 
@@ -95,5 +95,5 @@ tag = findTag(tagName, source)
 tagText = flawfinderParsing(tag)
 
 flawfinder = Element
-flawfinder = flawfinderResult_to_tag(tagText, nowDate)
+flawfinder = to_tag(tagText, nowDate, 'flawfinder')
 ElementTree(flawfinder).write('/var/lib/jenkins/workspace/testJuliet/flawfinder-' + nowDate + '.xml')
