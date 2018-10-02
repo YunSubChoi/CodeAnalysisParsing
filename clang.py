@@ -1,4 +1,5 @@
-import os						# for current working directory path
+import os                       # for directory path
+import glob                     # 디렉토리 내 파일을 얻기 위해 사용
 import datetime                 # date와 time을 얻기 위해 사용
 from lxml.html import parse     # html양식으로 파싱
 from io import StringIO         # 문자열 입출력 모듈
@@ -47,18 +48,37 @@ def findTag(tagName, source):
         tag.append(tempTag)
     return tag
 
-def flawfinderParsing(tag):
-    tempText = []
+def clangParsing(tag):
+    for i in range(0, len(tag), 1):     # repeat as many as files
+        tempNum = 0
+        while True:
+            if len(tag[i][0]) is 6:
+                break
+            if tempNum < 6:
+                tempNum = tempNum + 1
+            else:
+                del(tag[i][0][tempNum])
+
+    tempText3 = []
     tagText = []
-    for i in range(0, len(tag[0]), 1):
-        tempText = (tag[0][i].text).split('./')
-        tempText = tempText[1].split(':')
-        del tempText[2]
-        tagText.append(tempText)
-    for j in range(0, len(tag[1]), 1):
-        tagText[j].append(tag[1][j].text)
+    for j in range(0, len(tag), 1):     # repeat as many as files
+        tempText1 = []
+        tempText2 = []
+
+        tempText1 = tag[j][0][1].text    # tempText1 = file name
+        tempText2.append(tempText1)
+
+        tempText1 = (tag[j][1][0].text).split(',')
+        tempText1 = tempText1[0].replace('line ', '')    # tempText1 = error location
+        tempText2.append(tempText1)
+
+        tempText1 = tag[j][0][5].text    # tempText1 = error content
+        tempText2.append(tempText1)
+
+        tagText.append(tempText2)
+
     for k in range(0, len(tagText), 1):
-        tagText[k].append('flawfinder_result')
+        tagText[k].append('clang_result')
     return tagText
 
 def to_tag(tagText, nowDate, fileName):
@@ -76,26 +96,39 @@ def to_tag(tagText, nowDate, fileName):
 
 
 
-# nowDate에 datetime정보 저장
+# nowDatatime에 datetime정보 저장
 now = datetime.datetime.now()
+nowDatetime = now.strftime('%Y%m%d-%H_%M/')
 nowDate = now.strftime('%Y%m%d-%H%M')
 
-# fileName에 파일명 저장
-fileName = 'flawfinder.html'
-
-# filePath에 html파일이 있는 경로 저장
-filePath = '/home/khj/test2/result/' + fileName
+# folderName에 폴더명 저장
+folderName = 'clangResult-' + nowDatetime
 currentDir = os.getcwd()
+filePath = currentDir + '/' + folderName
+# filePath에 html파일이 있는 경로 저장
 
-source = ''
-tagName = ['li', 'i']
+os.chdir(filePath) # 디렉토리를 바꿔야 할 경우에만 쓰세요
+fileList = []
+for file in glob.glob("report-*.html"): # '*'은 모든 값을 의미
+    fileList.append(filePath+file)
+
+tagName = ['td', 'a']
+tempTag = []
 tag = []
 tagText = []
+source = []
+tempSource = ''
 
-source = sourceRead(filePath)
-tag = findTag(tagName, source)
-tagText = flawfinderParsing(tag)
+for i in range(0, len(fileList), 1):
+    tempSource = sourceRead(fileList[i])
+    source.append(tempSource)
 
-flawfinder = Element
-flawfinder = to_tag(tagText, nowDate, 'flawfinder')
-ElementTree(flawfinder).write('/home/khj/test2/result/flawfinder-' + nowDate + '.xml')
+for j in range(0, len(source), 1):
+    tempTag = findTag(tagName, source[j])
+    tag.append(tempTag)
+
+tagText = clangParsing(tag)
+
+clang = Element
+clang = to_tag(tagText, nowDate, 'clang')
+ElementTree(clang).write(currentDir + '/clang-' + nowDate + '.xml')

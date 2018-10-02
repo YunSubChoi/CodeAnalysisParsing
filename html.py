@@ -1,5 +1,5 @@
+import os                       # for directory path
 import glob                     # 디렉토리 내 파일을 얻기 위해 사용
-import os                       # 디렉토리를 바꿔야 할 경우 사용
 import datetime                 # date와 time을 얻기 위해 사용
 import copy
 from lxml.html import parse     # html양식으로 파싱
@@ -45,7 +45,7 @@ def findTag(tagName, source):
 
     # doc.findall(".//태그")    # 찾고자 하는 태그명
     for i in range(0, len(tagName), 1):
-        tempTag = doc.findall('.//'+tagName[i])
+        tempTag = doc.findall('.//' + tagName[i])
         tag.append(tempTag)
     return tag
 
@@ -176,18 +176,20 @@ nowDatetime = now.strftime('%Y%m%d-%H_%M/')
 nowDate = now.strftime('%Y%m%d-%H%M')
 
 # clangfolderName에 폴더명 저장
-clang_folderName = 'clangResult-' + nowDatetime
+# clang_folderName = 'clangResult-' + nowDatetime
+clang_folderName = 'clangResult'
 # flawfinderfileName에 파일명 저장
-flawfinder_fileName = 'outputF2.html'
+flawfinder_fileName = 'flawfinder.html'
 
 ## clang_filePath에 html파일이 있는 경로 저장
-clang_filePath = "D:/test/clangResult-20180824-17_30/"
+currentDir = os.getcwd()
+clang_filePath = currentDir + '/' + clang_folderName
 os.chdir(clang_filePath) # 디렉토리를 바꿔야 할 경우에만 쓰세요
 clang_fileList = []
 for clang_file in glob.glob("report-*.html"): # '*'은 모든 값을 의미
     clang_fileList.append(clang_filePath+clang_file)
 ## flawfinder_filePath에 html파일이 있는 경로 저장
-flawfinder_filePath = 'D:/test/' + flawfinder_fileName
+flawfinder_filePath = currentDir + '/' + flawfinder_fileName
 
 clang_tagName = ['td', 'a']
 flawfinder_tagName = ['li', 'i']
@@ -224,4 +226,4 @@ code_analysis = Element
 code_analysis = makeTag(sort_tagText, nowDate)
 codeAnalysis.append(code_analysis)
 
-ElementTree(codeAnalysis).write('D:/test/result/codeAnalysis-' + nowDate + '.xml')
+ElementTree(codeAnalysis).write(currentDir + '/codeAnalysis-' + nowDate + '.xml')
