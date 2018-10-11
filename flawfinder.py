@@ -1,7 +1,7 @@
 import os                       # for directory path
-import datetime                 # date와 time을 얻기 위해 사용
-from lxml.html import parse     # html양식으로 파싱
-from io import StringIO         # 문자열 입출력 모듈
+import datetime                 # to get date and time
+from lxml.html import parse     # parsing as html format
+from io import StringIO         # string input/output module
 from xml.etree.ElementTree import Element, SubElement, dump, ElementTree
 
 def indent(elem, level=0):
@@ -21,7 +21,6 @@ def indent(elem, level=0):
 
 def sourceRead(filePath):
     source = ''
-    # web문서를 source(text문서)로 가져오기
     with open(filePath, mode="r") as f:
         while True:
             line = f.readline()
@@ -31,21 +30,29 @@ def sourceRead(filePath):
                 source = source + line
     return source
 
-def findTag(tagName, source):
+def findTag(tagName, doc):
     tag = []
     tempTag = []
-    # html 문서로 파싱(변환)
-    source = StringIO(source)  # 문자열로 읽음
-    parsed = parse(source)  # source -> html형식으로 파싱
 
-    # root node 찾기
-    doc = parsed.getroot()
-
-    # doc.findall(".//태그")    # 찾고자 하는 태그명
+    # doc.findall(".//tagname")
     for i in range(0, len(tagName), 1):
         tempTag = doc.findall('.//' + tagName[i])
         tag.append(tempTag)
     return tag
+
+def combine_duplicate_errors(tagText):
+    duplicate_tagNum = []
+    for i in range(0, len(tagText)-1, 1):
+        for j in range(i+1, len(tagText), 1):
+            if tagText[i][0]==tagText[j][0]:
+                tagText[i][1] = tagText[i][1] + ';;;' + tagText[j][1]
+                tagText[i][2] = tagText[i][2] + ';;;' + tagText[j][2]
+                duplicate_tagNum.append(j)
+    tagTextLen = len(tagText)
+    for m in range(tagTextLen, 0, -1):
+        if m in duplicate_tagNum:
+            del tagText[m]
+    return tagText
 
 def flawfinderParsing(tag):
     tempText = []
@@ -71,19 +78,17 @@ def to_tag(tagText, nowDate, fileName):
         SubElement(error, "Location").text = "line " + tagText[tagNum][1]
         SubElement(error, "Description").text = tagText[tagNum][2]
     indent(fileNameTag)
-    dump(fileNameTag)
     return fileNameTag
 
 
-
-# nowDate에 datetime정보 저장
+# save date and time information to nowDate
 now = datetime.datetime.now()
 nowDate = now.strftime('%Y%m%d-%H%M')
 
-# fileName에 파일명 저장
-fileName = 'flawfinder.html'
+# save filename to fileName
+fileName = 'flawfinder-1.html'
 
-# filePath에 html파일이 있는 경로 저장
+# save filepath to filepath
 currentDir = os.getcwd()
 filePath = currentDir + '/' + fileName
 
@@ -93,8 +98,16 @@ tag = []
 tagText = []
 
 source = sourceRead(filePath)
-tag = findTag(tagName, source)
+
+source = StringIO(source)  # read as String
+parsed = parse(source)  # source -> parsing as html format
+
+# find root node
+doc = parsed.getroot()
+
+tag = findTag(tagName, doc)
 tagText = flawfinderParsing(tag)
+tagText = combine_duplicate_errors(tagText)
 
 flawfinder = Element
 flawfinder = to_tag(tagText, nowDate, 'flawfinder')
